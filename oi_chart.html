@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>OI Chart</title>
+<script>
+(function(){try{if(localStorage.getItem('oi-chart-theme')==='dark')document.documentElement.classList.add('dark-init');}catch(e){}})();
+</script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-page); color: var(--text-primary); }
+html.dark-init { background: #060608; }
+
+:root {
+  --bg-page: #f0f2f5;
+  --bg-box: #ffffff;
+  --bg-hover: #f5f6f8;
+  --border: #e2e5ea;
+  --text-primary: #111;
+  --text-secondary: #555;
+  --text-muted: #999;
+  --input-bg: #fff;
+  --input-border: #d1d5db;
+  --shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+body.dark {
+  --bg-page: #060608;
+  --bg-box: #0e0f14;
+  --bg-hover: #141620;
+  --border: #1e2030;
+  --text-primary: #dde1ed;
+  --text-secondary: #9aa1bd;
+  --text-muted: #424860;
+  --input-bg: #12131a;
+  --input-border: #1e2030;
+  --shadow: 0 1px 6px rgba(0,0,0,0.6);
+}
+
+.layout { display: flex; height: 100vh; padding: 12px; gap: 10px; }
+
+/* LEFT */
+.left-panel { display: flex; flex-direction: column; gap: 8px; width: 200px; flex-shrink: 0; }
+
+.box {
+  background: var(--bg-box);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: var(--shadow);
+}
+.box.grow { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: flex-end; }
+
+.box-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 7px; font-weight: 600; }
+
+.symbol-price-row { display: flex; align-items: baseline; gap: 7px; margin-top: 7px; }
+.symbol-price { font-size: 13px; color: var(--text-secondary); }
+.symbol-change { font-size: 12px; font-weight: 500; }
+.symbol-change.pos { color: #22c55e; }
+.symbol-change.neg { color: #ef4444; }
+
+select {
+  width: 100%; font-size: 12px; padding: 6px 28px 6px 9px; height: 32px;
+  border: 1px solid var(--input-border); border-radius: 7px;
+  background: var(--input-bg); color: var(--text-primary); cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 9px center;
+}
+select:focus { outline: none; border-color: #6366f1; }
+select:disabled { opacity: 0.5; cursor: default; }
+
+.expiry-item { display: flex; align-items: center; gap: 7px; padding: 5px 0; font-size: 12px; color: var(--text-primary); cursor: pointer; }
+.expiry-item + .expiry-item { border-top: 1px solid var(--border); }
+.expiry-item input[type=radio] { accent-color: #6366f1; width: 13px; height: 13px; cursor: pointer; }
+.expiry-days { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+.range-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.reset-btn { font-size: 11px; color: #6366f1; cursor: pointer; background: none; border: none; font-family: inherit; }
+.range-row { display: flex; gap: 8px; }
+.range-col { flex: 1; }
+.range-col label { font-size: 10px; color: var(--text-muted); display: block; margin-bottom: 3px; }
+.stepper { display: flex; align-items: center; border: 1px solid var(--input-border); border-radius: 7px; overflow: hidden; height: 30px; background: var(--input-bg); }
+.stepper button { width: 24px; height: 100%; background: none; border: none; color: var(--text-secondary); font-size: 15px; cursor: pointer; flex-shrink: 0; }
+.stepper button:hover { background: var(--bg-hover); }
+.stepper input { flex: 1; text-align: center; border: none; background: transparent; color: var(--text-primary); font-size: 11px; width: 0; min-width: 0; padding: 0; }
+.stepper input:focus { outline: none; }
+
+.atm-section-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin: 10px 0 6px; }
+.atm-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+.atm-btn { padding: 4px 9px; font-size: 11px; border: 1px solid var(--input-border); border-radius: 6px; background: var(--input-bg); color: var(--text-secondary); cursor: pointer; }
+.atm-btn.active { border-color: #6366f1; color: #6366f1; background: rgba(99,102,241,0.09); }
+
+.dm-row { display: flex; align-items: center; justify-content: space-between; }
+.dm-label { font-size: 12px; color: var(--text-secondary); }
+.toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track { position: absolute; inset: 0; background: var(--input-border); border-radius: 20px; cursor: pointer; transition: background 0.2s; }
+.toggle-track:before { content: ''; position: absolute; height: 14px; width: 14px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
+.toggle input:checked + .toggle-track { background: #6366f1; }
+.toggle input:checked + .toggle-track:before { transform: translateX(16px); }
+
+/* RIGHT */
+.right-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.chart-box {
+  flex: 1; background: var(--bg-box); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 14px 10px; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; min-height: 0; position: relative;
+}
+.chart-header { margin-bottom: 6px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+.chart-title { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.chart-sub { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
+.chart-meta { font-size: 11px; color: var(--text-secondary); display: flex; gap: 14px; }
+.chart-meta b { color: var(--text-primary); font-weight: 600; }
+.chart-wrap { position: relative; flex: 1; min-height: 0; }
+.chart-wrap canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
+
+.tooltip-box {
+  position: absolute; background: var(--bg-box); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 13px; font-size: 12px; pointer-events: none;
+  display: none; z-index: 10; min-width: 150px; box-shadow: 0 4px 14px rgba(0,0,0,0.13);
+}
+.tt-strike { font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 12px; }
+.tt-row { display: flex; justify-content: space-between; gap: 14px; align-items: center; margin-top: 3px; }
+.tt-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+.legend { display: flex; gap: 16px; margin-top: 7px; justify-content: center; flex-shrink: 0; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); }
+.leg-dot { width: 9px; height: 9px; border-radius: 2px; }
+
+.overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--bg-box); border-radius: 10px; z-index: 20; font-size: 12px; color: var(--text-muted);
+  flex-direction: column; gap: 8px; text-align: center; padding: 20px;
+}
+.overlay.hidden { display: none; }
+.spinner { width: 22px; height: 22px; border: 2px solid var(--border); border-top-color: #6366f1; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.err-msg { color: #ef4444; max-width: 260px; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- LEFT -->
+  <div class="left-panel">
+    <div class="box">
+      <div class="box-label">Symbol</div>
+      <select id="sym">
+        <option>NIFTY</option>
+        <option>BANKNIFTY</option>
+        <option>SENSEX</option>
+      </select>
+      <div class="symbol-price-row"><span class="symbol-price" id="symbol-price">—</span><span class="symbol-change" id="symbol-change"></span></div>
+    </div>
+
+    <div class="box">
+      <div class="box-label">Date</div>
+      <select id="dt"><option>Loading…</option></select>
+    </div>
+
+    <div class="box">
+      <div class="box-label">Expiry</div>
+      <div id="expiry-list"><div class="expiry-item" style="color:var(--text-muted)">Loading…</div></div>
+    </div>
+
+    <div class="box">
+      <div class="range-header">
+        <span class="box-label" style="margin-bottom:0">Strike Range</span>
+        <button class="reset-btn" onclick="resetRange()">↺ Reset</button>
+      </div>
+      <div class="range-row">
+        <div class="range-col">
+          <label>Min</label>
+          <div class="stepper"><button onclick="step('min',-1)">−</button><input type="text" id="min-val" value=""><button onclick="step('min',1)">+</button></div>
+        </div>
+        <div class="range-col">
+          <label>Max</label>
+          <div class="stepper"><button onclick="step('max',-1)">−</button><input type="text" id="max-val" value=""><button onclick="step('max',1)">+</button></div>
+        </div>
+      </div>
+      <div class="atm-section-label">Strikes around ATM</div>
+      <div class="atm-grid">
+        <button class="atm-btn" data-atm="all" onclick="setAtm(this)">All</button>
+        <button class="atm-btn" data-atm="five" onclick="setAtm(this)">5</button>
+        <button class="atm-btn active" data-atm="ten" onclick="setAtm(this)">10</button>
+        <button class="atm-btn" data-atm="fifteen" onclick="setAtm(this)">15</button>
+        <button class="atm-btn" data-atm="twenty" onclick="setAtm(this)">20</button>
+        <button class="atm-btn" data-atm="twenty_five" onclick="setAtm(this)">25</button>
+      </div>
+    </div>
+
+    <!-- spacer that grows -->
+    <div class="box grow">
+      <div class="dm-row">
+        <span class="dm-label">Dark mode</span>
+        <label class="toggle"><input type="checkbox" id="dm-toggle" onchange="toggleDark(this)"><span class="toggle-track"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-panel">
+    <div class="chart-box">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Open Interest — <span id="chart-sym">SENSEX</span></div>
+          <div class="chart-sub" id="chart-sub">Call / Put OI</div>
+        </div>
+        <div class="chart-meta" id="chart-meta"></div>
+      </div>
+      <div class="chart-wrap" id="chart-wrap">
+        <canvas id="oiChart"></canvas>
+        <div class="tooltip-box" id="tt">
+          <div class="tt-strike" id="tt-strike"></div>
+          <div class="tt-row">
+            <span style="display:flex;align-items:center;gap:5px;"><span class="tt-dot" style="background:#22c55e"></span><span style="color:var(--text-secondary)">Put OI</span></span>
+            <span id="tt-put" style="font-weight:600;color:var(--text-primary)"></span>
+          </div>
+          <div class="tt-row">
+            <span style="display:flex;align-items:center;gap:5px;"><span class="tt-dot" style="background:#ef4444"></span><span style="color:var(--text-secondary)">Call OI</span></span>
+            <span id="tt-call" style="font-weight:600;color:var(--text-primary)"></span>
+          </div>
+        </div>
+        <div class="overlay hidden" id="overlay"><div class="spinner"></div></div>
+      </div>
+      <div class="legend">
+        <div class="leg-item"><span class="leg-dot" style="background:#22c55e"></span>Put OI</div>
+        <div class="leg-item"><span class="leg-dot" style="background:#ef4444"></span>Call OI</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const API_BASE = 'https://sat98-openinterestbackend.hf.space';
+
+let strikes = [];
+let putOI = [];
+let callOI = [];
+let cmpIdx = 0;
+let CMP = 0;
+let CMP_SYM = 'SENSEX';
+let hoveredIdx = null;
+let isDark = false;
+let allStrikesFromLastChart = []; // full strike universe for current atm=all/manual range fetches
+
+const PUT_COLOR  = '#22c55e';
+const CALL_COLOR = '#ef4444';
+
+function gridColor() { return isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'; }
+function tickColor() { return isDark ? '#424860' : '#9ca3af'; }
+
+const highlightPlugin = {
+  id: 'colHighlight',
+  beforeDatasetsDraw(chart) {
+    if (hoveredIdx === null) return;
+    const { ctx, scales: { x, y } } = chart;
+    const bw = x.getPixelForValue(1) - x.getPixelForValue(0);
+    const cx = x.getPixelForValue(hoveredIdx);
+
+    ctx.save();
+    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
+    ctx.fillRect(cx - bw / 2, y.top, bw, y.bottom - y.top);
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(cx, y.top);
+    ctx.lineTo(cx, y.bottom);
+    ctx.stroke();
+    ctx.restore();
+  }
+};
+
+const cmpPlugin = {
+  id: 'cmpLine',
+  afterDraw(chart) {
+    if (cmpIdx < 0 || cmpIdx >= strikes.length) return;
+    const { ctx, scales: { x, y } } = chart;
+    const xPos = x.getPixelForValue(cmpIdx);
+    ctx.save();
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xPos, y.top);
+    ctx.lineTo(xPos, y.bottom);
+    ctx.stroke();
+    ctx.restore();
+
+    const label = CMP_SYM + ' ' + CMP.toLocaleString('en-IN');
+    ctx.save();
+    ctx.font = '11px -apple-system, sans-serif';
+    const lw = ctx.measureText(label).width + 16;
+    const lx = Math.min(Math.max(xPos, lw / 2 + 4), chart.width - lw / 2 - 4);
+    ctx.fillStyle = isDark ? '#0e0f14' : '#fff';
+    ctx.strokeStyle = isDark ? '#1e2030' : '#ddd';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.roundRect(lx - lw / 2, y.top - 2, lw, 20, 4);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = isDark ? '#c9cfe0' : '#333';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, lx, y.top + 12);
+    ctx.restore();
+  }
+};
+
+const chart = new Chart(document.getElementById('oiChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: [],
+    datasets: [
+      { label: 'Put OI',  data: [],  backgroundColor: PUT_COLOR,  borderRadius: 2, borderSkipped: false },
+      { label: 'Call OI', data: [], backgroundColor: CALL_COLOR, borderRadius: 2, borderSkipped: false }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    scales: {
+      x: { grid: { color: gridColor() }, ticks: { color: tickColor(), font: { size: 11 }, autoSkip: false, maxRotation: 0 } },
+      y: { grid: { color: gridColor() }, ticks: { color: tickColor(), font: { size: 11 }, callback: v => v + 'L' } }
+    },
+    onHover(evt) {
+      if (!evt.native || strikes.length === 0) return;
+      const tt = document.getElementById('tt');
+      const canvasRect = chart.canvas.getBoundingClientRect();
+      const wrapRect = document.getElementById('chart-wrap').getBoundingClientRect();
+      const xScale = chart.scales.x;
+      const mouseX = evt.native.clientX - canvasRect.left;
+
+      let closest = null, minDist = Infinity;
+      strikes.forEach((_, i) => {
+        const d = Math.abs(mouseX - xScale.getPixelForValue(i));
+        if (d < minDist) { minDist = d; closest = i; }
+      });
+      const bw = xScale.getPixelForValue(1) - xScale.getPixelForValue(0);
+      const idx = minDist < bw / 2 ? closest : null;
+
+      if (idx !== hoveredIdx) {
+        hoveredIdx = idx;
+        chart.update('none');
+      }
+
+      if (idx === null) { tt.style.display = 'none'; return; }
+
+      document.getElementById('tt-strike').textContent = 'Strike ' + strikes[idx].toLocaleString('en-IN');
+      document.getElementById('tt-put').textContent = putOI[idx].toFixed(2) + 'L';
+      document.getElementById('tt-call').textContent = callOI[idx].toFixed(2) + 'L';
+
+      let left = evt.native.clientX - wrapRect.left + 14;
+      let top  = evt.native.clientY - wrapRect.top - 20;
+      if (left + 165 > wrapRect.width) left -= 175;
+      if (top < 0) top = 4;
+      tt.style.left = left + 'px';
+      tt.style.top  = top + 'px';
+      tt.style.display = 'block';
+    }
+  },
+  plugins: [highlightPlugin, cmpPlugin]
+});
+
+document.getElementById('oiChart').addEventListener('mouseleave', () => {
+  hoveredIdx = null;
+  chart.update('none');
+  document.getElementById('tt').style.display = 'none';
+});
+
+function refreshChartColors() {
+  const gc = gridColor(), tc = tickColor();
+  chart.options.scales.x.grid.color = gc;
+  chart.options.scales.y.grid.color = gc;
+  chart.options.scales.x.ticks.color = tc;
+  chart.options.scales.y.ticks.color = tc;
+  chart.update('none');
+}
+
+function toggleDark(el) {
+  isDark = el.checked;
+  document.body.classList.toggle('dark', isDark);
+  refreshChartColors();
+  try { localStorage.setItem('oi-chart-theme', isDark ? 'dark' : 'light'); } catch (e) {}
+}
+
+function initTheme() {
+  let theme = 'light';
+  try {
+    theme = localStorage.getItem('oi-chart-theme') || 'light';
+  } catch (e) {}
+  isDark = theme === 'dark';
+  document.getElementById('dm-toggle').checked = isDark;
+  document.body.classList.toggle('dark', isDark);
+  refreshChartColors();
+}
+
+/* ---------------- State / helpers ---------------- */
+
+let currentAtm = 'ten';
+let manualRange = false;
+
+function step(field, delta) {
+  const el = document.getElementById(field + '-val');
+  const v = parseInt(el.value);
+  if (!isNaN(v)) {
+    el.value = v + delta;
+    manualRange = true;
+    loadChart();
+  }
+}
+function resetRange() {
+  manualRange = false;
+  document.getElementById('min-val').value = '';
+  document.getElementById('max-val').value = '';
+  loadChart();
+}
+function setAtm(btn) {
+  document.querySelectorAll('.atm-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentAtm = btn.dataset.atm;
+  manualRange = false;
+  document.getElementById('min-val').value = '';
+  document.getElementById('max-val').value = '';
+  loadChart();
+}
+
+function setOverlay(state, msg) {
+  const ov = document.getElementById('overlay');
+  if (state === 'hidden') { ov.classList.add('hidden'); ov.innerHTML = ''; return; }
+  ov.classList.remove('hidden');
+  if (state === 'loading') {
+    ov.innerHTML = '<div class="spinner"></div>';
+  } else if (state === 'error') {
+    ov.innerHTML = '<div class="err-msg">' + msg + '</div>';
+  }
+}
+
+function daysBetween(d1, d2) {
+  return Math.round((new Date(d2) - new Date(d1)) / 86400000);
+}
+
+/* ---------------- Init (symbol -> dates/expiries) ---------------- */
+
+async function loadInit() {
+  const symbol = document.getElementById('sym').value;
+  document.getElementById('chart-sym').textContent = symbol;
+  CMP_SYM = symbol;
+
+  const dtSel = document.getElementById('dt');
+  const expWrap = document.getElementById('expiry-list');
+  dtSel.innerHTML = '<option>Loading…</option>';
+  dtSel.disabled = true;
+  expWrap.innerHTML = '<div class="expiry-item" style="color:var(--text-muted)">Loading…</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/init?symbol=${encodeURIComponent(symbol)}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'init failed');
+
+    // Dates: latest first
+    const dates = [...data.dates].reverse();
+    dtSel.innerHTML = dates.map(d => `<option value="${d}">${formatDate(d)}</option>`).join('');
+    dtSel.disabled = false;
+
+    await loadExpiries(false);
+    loadChart();
+  } catch (err) {
+    dtSel.innerHTML = '<option>Error</option>';
+    expWrap.innerHTML = '<div class="expiry-item" style="color:#ef4444">' + escapeHtml(err.message) + '</div>';
+    setOverlay('error', 'Could not load symbol data.<br>' + escapeHtml(err.message));
+  }
+}
+
+function formatDate(iso) {
+  const [y, m, d] = iso.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${d} ${months[parseInt(m) - 1]} ${y}`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------------- Expiries (refetch when date changes) ---------------- */
+
+async function loadExpiries(preserveSelection) {
+  const symbol = document.getElementById('sym').value;
+  const date = document.getElementById('dt').value;
+  const expWrap = document.getElementById('expiry-list');
+  const prevSelected = preserveSelection
+    ? (document.querySelector('input[name="expiry"]:checked') || {}).value
+    : null;
+
+  expWrap.innerHTML = '<div class="expiry-item" style="color:var(--text-muted)">Loading…</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/expiries?underlying=${encodeURIComponent(symbol)}&date=${encodeURIComponent(date)}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const expiries = [...(data.expiries || [])].sort();
+
+    let selectedSet = false;
+    expWrap.innerHTML = expiries.map((exp, i) => {
+      const days = daysBetween(date, exp);
+      const checkThis = prevSelected ? exp === prevSelected : i === 0;
+      if (checkThis) selectedSet = true;
+      return `<label class="expiry-item">
+        <input type="radio" name="expiry" value="${exp}" ${checkThis ? 'checked' : ''} onchange="loadChart()">
+        ${formatDate(exp)}
+        <span class="expiry-days">${days}d</span>
+      </label>`;
+    }).join('');
+
+    if (!selectedSet) {
+      const first = expWrap.querySelector('input[name="expiry"]');
+      if (first) first.checked = true;
+    }
+
+    if (expiries.length === 0) {
+      expWrap.innerHTML = '<div class="expiry-item" style="color:var(--text-muted)">No expiries</div>';
+    }
+  } catch (err) {
+    expWrap.innerHTML = '<div class="expiry-item" style="color:#ef4444">' + escapeHtml(err.message) + '</div>';
+  }
+}
+
+/* ---------------- Chart data ---------------- */
+
+async function loadChart() {
+  const symbol = document.getElementById('sym').value;
+  const date = document.getElementById('dt').value;
+  const expiryEl = document.querySelector('input[name="expiry"]:checked');
+  if (!date || !expiryEl) return;
+  const expiry = expiryEl.value;
+
+  let url = `${API_BASE}/api/chart?underlying=${encodeURIComponent(symbol)}&date=${encodeURIComponent(date)}&expiry=${encodeURIComponent(expiry)}`;
+
+  const minVal = document.getElementById('min-val').value;
+  const maxVal = document.getElementById('max-val').value;
+
+  if (manualRange && minVal !== '' && maxVal !== '') {
+    url += `&min_strike=${encodeURIComponent(minVal)}&max_strike=${encodeURIComponent(maxVal)}`;
+  } else if (currentAtm !== 'all') {
+    url += `&atm=${encodeURIComponent(currentAtm)}`;
+  }
+
+  setOverlay('loading');
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'chart failed');
+
+    strikes = data.strikes;
+    putOI = data.put_oi;
+    callOI = data.call_oi;
+    CMP = data.spot;
+    CMP_SYM = data.symbol || symbol;
+    cmpIdx = strikes.findIndex(s => Math.abs(s - data.atm_strike) < 1e-6);
+    if (cmpIdx === -1) cmpIdx = strikes.reduce((bi, s, i) => Math.abs(s - CMP) < Math.abs(strikes[bi] - CMP) ? i : bi, 0);
+
+    chart.data.labels = strikes.map(s => s.toLocaleString('en-IN'));
+    chart.data.datasets[0].data = putOI;
+    chart.data.datasets[1].data = callOI;
+    hoveredIdx = null;
+    chart.update('none');
+
+    // header info
+    document.getElementById('symbol-price').textContent = CMP.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+    const chEl = document.getElementById('symbol-change');
+    const chg = data.ltp_change ?? 0;
+    chEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+    chEl.className = 'symbol-change ' + (chg >= 0 ? 'pos' : 'neg');
+
+    document.getElementById('chart-sub').textContent =
+      `Call / Put OI · Expiry ${formatDate(expiry)} · ${formatDate(date)}`;
+    document.getElementById('chart-meta').innerHTML =
+      `<span>ATM <b>${Math.round(data.atm_strike).toLocaleString('en-IN')}</b></span>` +
+      `<span>PCR <b>${data.pcr.toFixed(2)}</b></span>`;
+
+    // sync range inputs to current window
+    if (!manualRange) {
+      document.getElementById('min-val').value = strikes[0];
+      document.getElementById('max-val').value = strikes[strikes.length - 1];
+    }
+
+    setOverlay('hidden');
+  } catch (err) {
+    setOverlay('error', 'Could not load chart data.<br>' + escapeHtml(err.message));
+  }
+}
+
+document.getElementById('sym').addEventListener('change', loadInit);
+document.getElementById('dt').addEventListener('change', async () => {
+  await loadExpiries(true);
+  loadChart();
+});
+
+initTheme();
+loadInit();
+</script>
+</body>
+</html>
